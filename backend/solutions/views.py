@@ -24,6 +24,14 @@ class SolutionAnalysisView(APIView):
 
         # GPT 호출
         gpt_response = call_gpt_api(analysis.problem_image, analysis.answer_image, analysis.student_image)
+
+        if gpt_response is None:
+            analysis.delete()  # GPT 호출 실패 시, 생성했던 객체 삭제
+            return Response(
+                {"error": "AI 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
         analysis.gpt_response = gpt_response
         analysis.save()
 
