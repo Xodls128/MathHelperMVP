@@ -1,7 +1,8 @@
 [React UploadForm] 
+(이미지 3개 업로드)
 
 
-   ↓ (이미지 3개 업로드)
+   ↓ 
 
    
 POST /api/solutions/analyze/
