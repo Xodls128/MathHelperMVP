@@ -30,3 +30,10 @@ POST /api/solutions/analyze/
 
 [React ResultView]
    - gpt_response 표시
+
+
+
+
+    # TODO
+    # 줄글이 아닌 이미지로 전달
+    # 어디서 틀렸는지 직관적으로 알게 하기위한 방법 찾기
