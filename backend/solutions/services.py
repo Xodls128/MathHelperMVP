@@ -1,12 +1,14 @@
 import base64
 import requests
 import os
+import json
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 def call_gpt_api(problem_img, answer_img, student_img):
     """
     GPT API 호출 (이미지 3개 + 프롬프트 전달)
+    반환: 딕셔너리 안에 리스트, (x1,y1,x2,y2,correct_expr,explanation)
     """
     # FileField/ImageField 경로를 base64로 변환
     def encode_image(image_field):
@@ -27,18 +29,28 @@ def call_gpt_api(problem_img, answer_img, student_img):
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "다음 세 이미지를 바탕으로 학생 풀이를 구조적으로 분석해줘. 형식: 1) 올바른 단계, 2) 오류 단계, 3) 개선 제안"},
+                        {"type": "text",
+                            "text": """세 이미지를 비교하여 학생 풀이에서 틀린 부분을 찾아 JSON 배열로만 반환하세요.
+형식:
+[
+  {"x1": <int>, "y1": <int>, "x2": <int>, "y2": <int>,
+   "correct_expr": "<string>",
+   "logical_explanation": "<string>"}
+]
+줄글 없이 JSON만 출력하세요."""
+
+                        },
                         {"type": "image_url", "image_url": {"url": problem_b64}},
                         {"type": "image_url", "image_url": {"url": answer_b64}},
                         {"type": "image_url", "image_url": {"url": student_b64}}
                     ],
                 }
             ],
+            "temperature": 0.2,  # 최대한 일관된 JSON 형식 유도
         }
 
         response = requests.post(url, headers=headers, json=payload, timeout=30)
         response.raise_for_status()  # HTTP 2xx가 아니면 예외 발생
-
         result = response.json()
         
         # .get()을 사용하여 안전하게 값 추출
@@ -46,16 +58,22 @@ def call_gpt_api(problem_img, answer_img, student_img):
         
         if not content:
             print("API 응답에 content가 없습니다.")
-            return None
+            return []
             
-        return content
+        # JSON 파싱 시도
+        try:
+            annotations = json.loads(content)
+            return annotations
+        except json.JSONDecodeError:
+            print("응답을 JSON으로 파싱할 수 없습니다. 원문 반환.")
+            return []
 
     except requests.exceptions.RequestException as e:
         print(f"API 호출 오류: {e}")
-        return None
+        return []
     except (KeyError, IndexError) as e:
         print(f"API 응답 파싱 오류: {e}")
-        return None
+        return []
     except Exception as e:
         print(f"이미지 인코딩 또는 기타 오류: {e}")
-        return None
+        return []
