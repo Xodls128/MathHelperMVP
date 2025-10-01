@@ -2,6 +2,11 @@ from rest_framework import serializers
 from .models import SolutionAnalysis
 
 class SolutionAnalysisSerializer(serializers.ModelSerializer):
+    problem_image = serializers.ImageField(read_only=True)
+    answer_image = serializers.ImageField(read_only=True)
+    student_image = serializers.ImageField(read_only=True)
+    overlay_image = serializers.ImageField(read_only=True)
+
     class Meta:
         model = SolutionAnalysis
         fields = "__all__"   
