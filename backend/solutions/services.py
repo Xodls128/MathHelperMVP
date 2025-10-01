@@ -2,6 +2,7 @@ import base64
 import requests
 import os
 import json
+import re
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
@@ -55,17 +56,22 @@ def call_gpt_api(problem_img, answer_img, student_img):
         
         # .get()을 사용하여 안전하게 값 추출
         content = result.get("choices", [{}])[0].get("message", {}).get("content")
-        
+
         if not content:
             print("API 응답에 content가 없습니다.")
             return []
-            
-        # JSON 파싱 시도
-        try:
-            annotations = json.loads(content)
-            return annotations
-        except json.JSONDecodeError:
-            print("응답을 JSON으로 파싱할 수 없습니다. 원문 반환.")
+
+        # JSON 부분만 정규식으로 추출
+        match = re.search(r"\[.*\]", content, re.S)  # [ ... ] 블록 전체 잡기
+        if match:
+            try:
+                annotations = json.loads(match.group())
+                return annotations
+            except json.JSONDecodeError:
+                print("JSON 파싱 실패 (배열 추출 성공했지만 불완전). 원문 반환.")
+                return []
+        else:
+            print("응답에서 JSON 배열을 찾을 수 없습니다.")
             return []
 
     except requests.exceptions.RequestException as e:
